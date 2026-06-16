@@ -2230,7 +2230,7 @@ function FinancePage({ selectedUser, financeExpenses, onSaveFinanceExpense, onDe
       <PageHeader
         Icon={Wallet}
         title="Finanzen"
-        description="Kosten werden pro Beleg erfasst, automatisch auf die betroffenen Personen verteilt und in einer Nettosaldo-Übersicht verrechnet."
+        description="Hier könnt ihr Ausgaben eintragen, auf die beteiligten Personen aufteilen und offene Beträge ganz entspannt im Blick behalten."
       />
 
       <form className="editor-card editor-card--sand" onSubmit={handleSubmit}>
