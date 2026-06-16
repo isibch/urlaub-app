@@ -634,7 +634,7 @@ function getHomeCards(
       subtitle:
         allergies.length > 0
           ? `${allergies.length} Hinweise eingetragen`
-          : "Unverträglichkeiten zentral sichtbar machen",
+          : "Allergien und Unverträglichkeiten hinterlegen",
       color: "coral",
       Icon: BadgeAlert,
     },
