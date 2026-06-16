@@ -2281,7 +2281,7 @@ function FinancePage({ selectedUser, financeExpenses, onSaveFinanceExpense, onDe
           <div className="field-header">
             <span>Betrifft</span>
             <button className="inline-action" type="button" onClick={handleSelectAll}>
-              Alle außer mir
+              Alle
             </button>
           </div>
 
