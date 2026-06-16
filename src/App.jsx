@@ -318,6 +318,9 @@ function normalizeDayPlans(savedPlans = []) {
     title: entry.title ?? entry.activity ?? "",
     note: entry.note ?? "",
     createdBy: USERS.includes(entry.createdBy) ? entry.createdBy : entry.person ?? "",
+    allDay: entry.allDay ?? !(entry.startTime || entry.endTime),
+    startTime: entry.startTime ?? "",
+    endTime: entry.endTime ?? "",
   }));
 }
 
@@ -368,6 +371,9 @@ function getDayPlanFormDefaults(person) {
     title: "",
     note: "",
     createdBy: person,
+    allDay: true,
+    startTime: "",
+    endTime: "",
   };
 }
 
@@ -455,6 +461,50 @@ function formatDateTimeLabel(value) {
   }).format(new Date(value));
 }
 
+function formatTimeRange(startTime, endTime, allDay) {
+  if (allDay) {
+    return "Ganztägig";
+  }
+
+  if (startTime && endTime) {
+    return `${startTime} - ${endTime} Uhr`;
+  }
+
+  if (startTime) {
+    return `Ab ${startTime} Uhr`;
+  }
+
+  if (endTime) {
+    return `Bis ${endTime} Uhr`;
+  }
+
+  return "Uhrzeit offen";
+}
+
+function compareDayPlanEntries(first, second) {
+  if (first.allDay && !second.allDay) {
+    return -1;
+  }
+
+  if (!first.allDay && second.allDay) {
+    return 1;
+  }
+
+  if (!first.startTime && !second.startTime) {
+    return 0;
+  }
+
+  if (!first.startTime) {
+    return 1;
+  }
+
+  if (!second.startTime) {
+    return -1;
+  }
+
+  return first.startTime.localeCompare(second.startTime);
+}
+
 function getExpenseParticipantCount(expense) {
   return expense.relevantUsers.length + (expense.includePayerShare ? 1 : 0);
 }
@@ -534,13 +584,17 @@ function getBalanceSummary(selectedUser, expenses) {
 function getScheduleEntriesForDate(dateKey, dayPlans, cookingPlans) {
   const dailyEntries = dayPlans
     .filter((entry) => entry.date === dateKey)
+    .sort(compareDayPlanEntries)
     .map((entry) => ({
       id: entry.id,
       type: "plan",
       title: entry.title,
       createdBy: entry.createdBy,
-      meta: `Von ${entry.createdBy}`,
+      meta: `${formatTimeRange(entry.startTime, entry.endTime, entry.allDay)} · Von ${entry.createdBy}`,
       note: entry.note,
+      allDay: entry.allDay,
+      startTime: entry.startTime,
+      endTime: entry.endTime,
     }));
 
   const dinnerEntries = cookingPlans
@@ -1424,7 +1478,14 @@ function DailyPlansPage({
   function handleSubmit(event) {
     event.preventDefault();
 
-    if (!dayPlanForm.date || !dayPlanForm.title.trim()) {
+    if (
+      !dayPlanForm.date ||
+      !dayPlanForm.title.trim() ||
+      (!dayPlanForm.allDay &&
+        (!dayPlanForm.startTime ||
+          !dayPlanForm.endTime ||
+          dayPlanForm.endTime <= dayPlanForm.startTime))
+    ) {
       return;
     }
 
@@ -1434,6 +1495,9 @@ function DailyPlansPage({
       title: dayPlanForm.title.trim(),
       note: dayPlanForm.note.trim(),
       createdBy: dayPlanForm.createdBy,
+      allDay: dayPlanForm.allDay,
+      startTime: dayPlanForm.allDay ? "" : dayPlanForm.startTime,
+      endTime: dayPlanForm.allDay ? "" : dayPlanForm.endTime,
     });
 
     setEditingDayPlanId("");
@@ -1528,6 +1592,58 @@ function DailyPlansPage({
           </label>
         </div>
 
+        <div className="field-grid">
+          <label className="field">
+            <span>Zeitraum</span>
+            <select
+              value={dayPlanForm.allDay ? "all-day" : "time-range"}
+              onChange={(event) =>
+                setDayPlanForm((current) => ({
+                  ...current,
+                  allDay: event.target.value === "all-day",
+                  startTime: event.target.value === "all-day" ? "" : current.startTime,
+                  endTime: event.target.value === "all-day" ? "" : current.endTime,
+                }))
+              }
+            >
+              <option value="all-day">Ganztägig</option>
+              <option value="time-range">Von / bis</option>
+            </select>
+          </label>
+        </div>
+
+        {!dayPlanForm.allDay ? (
+          <div className="field-grid">
+            <label className="field">
+              <span>Von</span>
+              <input
+                type="time"
+                value={dayPlanForm.startTime}
+                onChange={(event) =>
+                  setDayPlanForm((current) => ({
+                    ...current,
+                    startTime: event.target.value,
+                  }))
+                }
+              />
+            </label>
+
+            <label className="field">
+              <span>Bis</span>
+              <input
+                type="time"
+                value={dayPlanForm.endTime}
+                onChange={(event) =>
+                  setDayPlanForm((current) => ({
+                    ...current,
+                    endTime: event.target.value,
+                  }))
+                }
+              />
+            </label>
+          </div>
+        ) : null}
+
         <label className="field">
           <span>Programmpunkt</span>
           <input
@@ -1547,7 +1663,7 @@ function DailyPlansPage({
           <span>Notiz</span>
           <textarea
             rows="3"
-            placeholder="Optional, z. B. Uhrzeit, Ort oder Tisch reservieren"
+            placeholder="Optional, z. B. Ort, Treffpunkt oder Tisch reservieren"
             value={dayPlanForm.note}
             onChange={(event) =>
               setDayPlanForm((current) => ({
@@ -1632,6 +1748,9 @@ function DailyPlansPage({
                               title: entry.title,
                               note: entry.note,
                               createdBy: entry.createdBy || selectedUser,
+                              allDay: entry.allDay ?? true,
+                              startTime: entry.startTime ?? "",
+                              endTime: entry.endTime ?? "",
                             });
                           }}
                         >
