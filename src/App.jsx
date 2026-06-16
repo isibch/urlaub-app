@@ -3098,7 +3098,7 @@ function App() {
               text={
                 isDuringVacation
                   ? "Für heute gibt es noch keine Tagespunkte."
-                  : "Noch keine Tagesplaene eingetragen."
+                  : "Noch keine Tagespläne eingetragen."
               }
             />
           ) : (
